@@ -1,0 +1,8 @@
+pypdf 
+python-dotenv  
+llama-index 
+llama-index-embeddings-cloudflare-workersai 
+llama-index-vector-stores-mongodb 
+llama-index-tools-tavily-research
+Flask
+Flask-Cors
