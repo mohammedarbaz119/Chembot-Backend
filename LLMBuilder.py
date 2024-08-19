@@ -60,6 +60,7 @@ class OurLLM(CustomLLM):
             if chunk:
                 # Decode the chunk
                 decoded_chunk = chunk.decode('utf-8')
+                print(decoded_chunk)
 
                 # Find and extract the JSON part (assuming it's within 'data: {...}')
                 if decoded_chunk.startswith("data: "):

@@ -21,6 +21,7 @@ Context information is below.
 Given the context information and not prior knowledge,
 respond to the user query below only if it's related to chemistry. If the query is not related to chemistry, respond with "I only answer questions related to chemistry." Do not add information from the context if it is not chemistry-related. If you don't know the answer to a chemistry question, simply respond with "I don't know." Do not attempt to fabricate an answer.
 If context is empty or if there is no context present above then say "I don't have information to answer the query." Don't try to make up an answer when the query is not chemistry-related.
+if you words that are seperated join them and don't start the Anseer by "based on provided context" or similar startings
 Query: {query_str}
 Answer:
 """
