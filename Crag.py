@@ -13,20 +13,6 @@ import os
 
 load_dotenv()
 
-qa_prompt_tmpl_str="""
-Context information is below.
----------------------
-{context_str}
----------------------
-Given the context information and not prior knowledge,
-respond to the user query below only if it's related to chemistry. If the query is not related to chemistry, respond with "I only answer questions related to chemistry." Do not add information from the context if it is not chemistry-related. If you don't know the answer to a chemistry question, simply respond with "I don't know." Do not attempt to fabricate an answer.
-If context is empty or if there is no context present above then say "I don't have information to answer the query." Don't try to make up an answer when the query is not chemistry-related.
-if you words that are seperated join them and don't start the Anseer by "based on provided context" or similar startings
-Query: {query_str}
-Answer:
-"""
-
-
 # qa_prompt_tmpl_str="""
 # Context information is below.
 # ---------------------
@@ -34,24 +20,33 @@ Answer:
 # ---------------------
 # Given the context information and not prior knowledge,
 # respond to the user query below only if it's related to chemistry. If the query is not related to chemistry, respond with "I only answer questions related to chemistry." Do not add information from the context if it is not chemistry-related. If you don't know the answer to a chemistry question, simply respond with "I don't know." Do not attempt to fabricate an answer.
-# if context is empty then say I don't have information to answer the query. \
-# don't try to make up an answer when query is not chemistry related. \
+# If context is empty or if there is no context present above then say "I don't have information to answer the query." Don't try to make up an answer when the query is not chemistry-related.
+# if you words that are seperated join them and don't start the Anseer by "based on provided context" or similar startings
 # Query: {query_str}
 # Answer:
 # """
 
-# qa_prompt_tmpl_str = """\
-# Context information is below.
-# ---------------------
-# {context_str}
-# ---------------------
-# Given the context information and not prior knowledge, \
-# Given the user query below check if it's related to chemistry subject if it's not then say "I only answer questions related to chemistry" and don't try to add from the context. \
-# Answer the query asking about chemistry related topics only. \
-# If you don't know the answer, just say you don't know, don't try to make up an answer. \
-# Query: {query_str}
-# Answer: \
-# """
+qa_prompt_tmpl_str="""
+Context information is below.
+---------------------
+{context_str}
+---------------------
+Given the context information and not prior knowledge, respond to the user query below only if it's related to chemistry. 
+
+If the query is not related to chemistry, respond with "I only answer questions related to chemistry." 
+
+Do not add information from the context if it is not chemistry-related.
+
+If you don't know the answer to a chemistry question, simply respond with "I don't know." Do not attempt to fabricate an answer.
+
+If context is empty or if there is no context present above, then say "I don't have information to answer the query."
+
+Fix any broken words in the context (e.g., "chemic al" should be "chemical") before processing.
+
+Query: {query_str}
+Answer: 
+"""
+
 
 qa_prompt_tmpl = PromptTemplate(
     qa_prompt_tmpl_str
@@ -107,7 +102,7 @@ DEFAULT_TRANSFORM_QUERY_TEMPLATE = PromptTemplate(
 )
 from llama_index.core import get_response_synthesizer
 
-response_synthesizer = get_response_synthesizer(response_mode="refine",llm=llm)
+response_synthesizer = get_response_synthesizer(response_mode="refine",llm=llm,streaming=True)
 
 class CorrectiveRAG():
     def __init__(self, index, tavily_ai_apikey: str,llm) -> None:
@@ -169,7 +164,6 @@ class CorrectiveRAG():
         index = SummaryIndex.from_documents(documents)
         query_engine = index.as_query_engine(streaming=True,llm=llm,text_qa_template=qa_prompt_tmpl,similarity_top_k=5)
         return query_engine.query(query_str)
-        # response_synthesizer=response_synthesizer,
 
     def run(self, query_str: str, **kwargs: Any) -> Any:
         """Run the pipeline."""
@@ -205,6 +199,5 @@ class CorrectiveRAG():
         else:
             return self.get_result(relevant_text, "", query_str)
 crag = CorrectiveRAG(index,os.getenv("TAVILY_API_KEY"),llm)
-
 
 

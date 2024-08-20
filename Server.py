@@ -25,7 +25,7 @@ def query_index():
         try:
             ans = crag.run(query_str=query_text)
             for token in ans.response_gen:
-                yield f"{token}\n\n"
+                yield f"{token}"
             yield f"[END]\n\n"
         except Exception as e:
             yield f"Error: {str(e)}\n\n"
