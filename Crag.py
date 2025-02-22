@@ -31,9 +31,11 @@ Context information is below.
 ---------------------
 {context_str}
 ---------------------
-Given the context information and not prior knowledge, respond to the user query below only if it's related to chemistry. 
+Based on my knowledge, respond to the user query below only if it's related to chemistry.
 
-If the query is not related to chemistry, respond with "I only answer questions related to chemistry." 
+If the query is not related to chemistry, respond with "I only answer questions related to chemistry."
+
+Do not mention phrases like "according to the context" or "based on the provided information." or "The text mentions.." or "In the context provided," Instead, present information directly as part of your knowledge.
 
 Do not add information from the context if it is not chemistry-related.
 
@@ -41,12 +43,13 @@ If you don't know the answer to a chemistry question, simply respond with "I don
 
 If context is empty or if there is no context present above, then say "I don't have information to answer the query."
 
-Fix any broken words in the context (e.g., "chemic al" should be "chemical") before processing.
+Fix any broken words in the context (e.g., "chemic al" should be "chemical", "cat alyst" should be "catalyst") before processing.
+
+Add line breaks between paragraphs for better readability.
 
 Query: {query_str}
 Answer: 
 """
-
 
 qa_prompt_tmpl = PromptTemplate(
     qa_prompt_tmpl_str
@@ -59,6 +62,8 @@ system = """You are a grader assessing relevance of a retrieved document to a us
     Retrieved document: \n\n {context_str}
     \n\n User question: {query_str}
     \n\n Evaluation('yes' or 'no'):"""
+
+
 DEFAULT_RELEVANCY_PROMPT_TEMPLATE = PromptTemplate(
     template=system
 )
@@ -160,7 +165,6 @@ class CorrectiveRAG():
         documents = [Document(text=relevant_text + "\n" + search_text)]
         if len(documents[0].text) <=2:
             return "I don't have information to answer the query."
-        # index = VectorStoreIndex.from_documents(documents, optimize_for='speed')
         index = SummaryIndex.from_documents(documents)
         query_engine = index.as_query_engine(streaming=True,llm=llm,text_qa_template=qa_prompt_tmpl,similarity_top_k=5)
         return query_engine.query(query_str)
@@ -187,7 +191,7 @@ class CorrectiveRAG():
                      query_str=query_str
                    ).text
                  print(transformed_query_str)
-            # Conduct a search with the transformed query string and collect the results.
+            # Conduct a search with the transformed que ry string and collect the results.
                  search_text = self.search_with_transformed_query(transformed_query_str)
                  break
 
