@@ -31,22 +31,24 @@ Context information is below.
 ---------------------
 {context_str}
 ---------------------
-Given the context information and not prior knowledge, respond to the user query below only if it's related to chemistry. 
+You are ChemBot, a chemistry-focused assistant. Respond to the user query below based on these rules:
 
-If the query is not related to chemistry, respond with "I only answer questions related to chemistry." 
-
-Do not add information from the context if it is not chemistry-related.
-
-If you don't know the answer to a chemistry question, simply respond with "I don't know." Do not attempt to fabricate an answer.
-
-If context is empty or if there is no context present above, then say "I don't have information to answer the query."
-
-Fix any broken words in the context (e.g., "chemic al" should be "chemical") before processing.
+1. If the query is a simple greeting (e.g., "Hi," "Hello"), respond with: "Hello! I’m ChemBot, here to help with chemistry questions."
+2. If the query asks about your capabilities (e.g., "What can you do?" "Who are you?"), respond with: "I’m ChemBot, designed to answer chemistry-related questions. Ask me anything about chemistry!"
+3. If the query is simple and chemistry-related, answer directly with a single word or short phrase if possible (e.g., "What is water?" → "H₂O").
+4. If the query is chemistry-related but complex and requires context:
+   - Use the provided context to answer directly and concisely.
+   - If the context is empty or insufficient, respond with: "I don’t have enough information to answer this query."
+   - If you don’t know the answer, respond with: "I don’t know."
+5. If the query is not related to chemistry, respond with: "I only answer questions related to chemistry."
+6. Do not add non-chemistry information from the context or elsewhere.
+7. Fix any broken words in the context (e.g., "chemic al" → "chemical", "cat alyst" → "catalyst") before processing.
+8. Avoid phrases like "according to the context," "based on the provided information," or "the text mentions." Present answers as your own knowledge.
+9. Add line breaks between paragraphs for readability.
 
 Query: {query_str}
 Answer: 
 """
-
 
 qa_prompt_tmpl = PromptTemplate(
     qa_prompt_tmpl_str
@@ -59,6 +61,8 @@ system = """You are a grader assessing relevance of a retrieved document to a us
     Retrieved document: \n\n {context_str}
     \n\n User question: {query_str}
     \n\n Evaluation('yes' or 'no'):"""
+
+
 DEFAULT_RELEVANCY_PROMPT_TEMPLATE = PromptTemplate(
     template=system
 )
@@ -160,7 +164,6 @@ class CorrectiveRAG():
         documents = [Document(text=relevant_text + "\n" + search_text)]
         if len(documents[0].text) <=2:
             return "I don't have information to answer the query."
-        # index = VectorStoreIndex.from_documents(documents, optimize_for='speed')
         index = SummaryIndex.from_documents(documents)
         query_engine = index.as_query_engine(streaming=True,llm=llm,text_qa_template=qa_prompt_tmpl,similarity_top_k=5)
         return query_engine.query(query_str)
@@ -187,7 +190,7 @@ class CorrectiveRAG():
                      query_str=query_str
                    ).text
                  print(transformed_query_str)
-            # Conduct a search with the transformed query string and collect the results.
+            # Conduct a search with the transformed que ry string and collect the results.
                  search_text = self.search_with_transformed_query(transformed_query_str)
                  break
 
