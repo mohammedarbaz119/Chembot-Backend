@@ -7,3 +7,4 @@ llama-index-tools-tavily-research
 Flask
 waitress
 Flask-Cors
+llama-index-embeddings-google
