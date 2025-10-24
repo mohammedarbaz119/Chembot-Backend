@@ -2,6 +2,7 @@ from llama_index.core import PromptTemplate
 from typing import Any, Dict, List
 from llama_index.core import SummaryIndex
 from llama_index.core.llama_pack.base import BaseLlamaPack
+from llama_index.core import get_response_synthesizer
 from llama_index.core.schema import Document, NodeWithScore
 from llama_index.core.query_pipeline.query import QueryPipeline
 from llama_index.tools.tavily_research.base import TavilyToolSpec
@@ -97,12 +98,32 @@ Answer:
 
 qa_prompt_tmpl = PromptTemplate(qa_prompt_tmpl_str)
 
-system = """You are a grader assessing relevance of a retrieved document to a user question. \n
-    If the document contains keyword(s) or semantic meaning related to the question, grade it as relevant. \n
-    Give a binary score 'yes' or 'no' score to indicate whether the document is relevant to the question.
-    Retrieved document: \n\n {context_str}
-    \n\n User question: {query_str}
-    \n\n Evaluation('yes' or 'no'):"""
+system = """You are an expert document relevance evaluator. Your task is to determine if a retrieved document is relevant to answering a user's question.
+
+RELEVANCE CRITERIA:
+- The document contains information that directly addresses the question
+- The document provides context, definitions, or background necessary to answer the question
+- The document includes related concepts, entities, or data mentioned in the question
+
+IRRELEVANCE INDICATORS:
+- The document only shares superficial keyword matches without meaningful content
+- The document discusses an entirely different topic despite some overlapping terms
+- The document cannot contribute to answering the question in any meaningful way
+
+INSTRUCTIONS:
+1. Carefully analyze both the question's intent and the document's content
+2. Consider semantic relevance, not just keyword matching
+3. Respond with ONLY 'yes' or 'no'
+   - 'yes': The document is relevant and could help answer the question
+   - 'no': The document is not relevant and would not help answer the question
+
+RETRIEVED DOCUMENT:
+{context_str}
+
+USER QUESTION:
+{query_str}
+
+EVALUATION (respond with 'yes' or 'no'):"""
 
 
 DEFAULT_RELEVANCY_PROMPT_TEMPLATE = PromptTemplate(
@@ -137,7 +158,6 @@ DEFAULT_TRANSFORM_QUERY_TEMPLATE = PromptTemplate(
     Your goal is to rephrase or enhance this query to improve its search performance. Ensure the revised query is concise and directly aligned with the intended search objective. \n
     Respond with the optimized query only:"""
 )
-from llama_index.core import get_response_synthesizer
 
 response_synthesizer = get_response_synthesizer(response_mode="refine",llm=llm,streaming=True)
 
@@ -150,6 +170,9 @@ class CorrectiveRAG():
         )
         self.transform_query_pipeline = QueryPipeline(
             chain=[DEFAULT_TRANSFORM_QUERY_TEMPLATE, llm]
+        )
+        self.text_correction_pipeline = QueryPipeline(
+            chain=[DEFAULT_TEXT_CORRECTION_TEMPLATE, llm]
         )
         self.index = index
         self.tavily_tool = TavilyToolSpec(api_key=tavily_ai_apikey)
@@ -204,7 +227,10 @@ class CorrectiveRAG():
     def run(self, query_str: str, **kwargs: Any) -> Any:
         """Run the pipeline."""
         # Retrieve nodes based on the input query string.
-        retrieved_nodes = self.retrieve_nodes(query_str, **kwargs)
+        corrected_query_str = self.text_correction_pipeline.run(
+            text_str=query_str
+        ).text
+        retrieved_nodes = self.retrieve_nodes(corrected_query_str, **kwargs)
 
         # Evaluate the relevancy of each retrieved document in relation to the query string.
         relevancy_results = self.evaluate_relevancy(retrieved_nodes, query_str)
